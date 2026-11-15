@@ -1,0 +1,11 @@
+node_modules
+dist
+.env
+.env.test
+.env.sonar
+**/src/generated
+
+# SonarQube y cobertura
+coverage
+.scannerwork
+reports

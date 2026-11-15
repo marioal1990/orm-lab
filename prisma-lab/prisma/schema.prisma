@@ -1,0 +1,29 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Cliente {
+  id       Int      @id @default(autoincrement())
+  email    String   @unique
+  nombre   String
+  telefono String?  @db.VarChar(20)
+  pedidos  Pedido[]
+
+  @@map("cliente")
+}
+
+model Pedido {
+  id        Int      @id @default(autoincrement())
+  total     Decimal  @db.Decimal(10, 2)
+  estado    String   @default("PENDIENTE")
+  creadoEn  DateTime @default(now()) @map("creado_en")
+  clienteId Int      @map("cliente_id")
+  cliente   Cliente  @relation(fields: [clienteId], references: [id], onDelete: Cascade)
+
+  @@map("pedido")
+}

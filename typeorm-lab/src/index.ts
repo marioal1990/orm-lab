@@ -1,14 +1,32 @@
-import { DataSource } from "typeorm";
+import { z } from "zod";
+import { AppDataSource } from "./data-source.js";
+import { CrearClienteConPedidosSchema } from "./dtos/cliente.dto.js";
+import { toClienteResponse } from "./mappers/cliente.mapper.js";
+import { ClienteService } from "./services/cliente.services.js";
 
+// Flujo completo: JSON de entrada -> validación (DTO) -> servicio -> respuesta (mapper).
+// `body` simula lo que llegaría en un POST /clientes.
+const body: unknown = {
+  email: "john@example.com",
+  nombre: "John Doe",
+  pedidos: [{ total: "15990.00" }, { total: "4990.00" }],
+};
 
-const ds = new DataSource({
-    ype: "postgres",
-    host: process.env.DB_HOST,
-    port: Number(process.env.DB_PORT ?? 5432),
-    username: process.env.DB_USER,
-    password: process.env.DB_PASSWORD,
-    database: process.env.DB_NAME,
-    entities: [Cliente, Pedido],
-    synchronize: true,
-    logging: true,
-});
+const resultado = CrearClienteConPedidosSchema.safeParse(body);
+if (!resultado.success) {
+  console.error("Datos inválidos:\n" + z.prettifyError(resultado.error));
+  process.exit(1);
+}
+
+await AppDataSource.initialize();
+try {
+  const service = new ClienteService(AppDataSource);
+
+  // Idempotente: si ya existe, no lo vuelve a crear (el email es único)
+  const existente = await service.buscarPorEmail(resultado.data.email);
+  const cliente = existente ?? (await service.crearConPedidos(resultado.data));
+
+  console.log(existente ? "El cliente ya existía:" : "Cliente creado:", toClienteResponse(cliente));
+} finally {
+  await AppDataSource.destroy();
+}

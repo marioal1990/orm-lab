@@ -1,0 +1,21 @@
+# SonarQube Community Build para analizar los proyectos del laboratorio.
+# Levantar:  docker compose up -d sonarqube
+# Abrir:     http://localhost:9000  (primer ingreso: admin / admin)
+services:
+  sonarqube:
+    image: sonarqube:community
+    container_name: sonarqube
+    ports:
+      - "9000:9000"
+    environment:
+      # Base embebida (H2): suficiente para aprender; en producción se usa PostgreSQL
+      SONAR_ES_BOOTSTRAP_CHECKS_DISABLE: "true"
+    volumes:
+      - sonarqube_data:/opt/sonarqube/data
+      - sonarqube_extensions:/opt/sonarqube/extensions
+      - sonarqube_logs:/opt/sonarqube/logs
+
+volumes:
+  sonarqube_data:
+  sonarqube_extensions:
+  sonarqube_logs:

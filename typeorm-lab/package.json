@@ -1,11 +1,25 @@
 {
   "name": "typeorm-lab",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "description": "Laboratorio de TypeORM 1.x con PostgreSQL",
+  "main": "dist/index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "dev": "tsx --env-file=.env src/index.ts"
+    "dev": "tsx --env-file=.env src/index.ts",
+    "seed": "tsx --env-file=.env src/seed.ts",
+    "consultas": "tsx --env-file=.env src/consultas.ts",
+    "tx": "tsx --env-file=.env src/transacciones.ts",
+    "typeorm": "tsx --env-file=.env ./node_modules/typeorm/cli.js",
+    "migration:generate": "npm run typeorm -- migration:generate -d src/data-source.ts",
+    "migration:run": "npm run typeorm -- migration:run -d src/data-source.ts",
+    "migration:revert": "npm run typeorm -- migration:revert -d src/data-source.ts",
+    "migration:show": "npm run typeorm -- migration:show -d src/data-source.ts",
+    "test": "tsx --env-file=.env.test --test --test-concurrency=1 \"test/**/*.test.ts\"",
+    "test:coverage": "c8 npm test",
+    "sonar": "npm run test:coverage && node --env-file=../.env.sonar ./node_modules/@sonar/scan/bin/sonar-scanner.js",
+    "typecheck": "tsc",
+    "build": "tsc -p tsconfig.build.json",
+    "start": "node --env-file=.env dist/index.js",
+    "migration:run:prod": "node --env-file=.env ./node_modules/typeorm/cli.js migration:run -d dist/data-source.js"
   },
   "keywords": [],
   "author": "",
@@ -14,11 +28,17 @@
   "dependencies": {
     "pg": "^8.23.1",
     "reflect-metadata": "^0.2.2",
-    "typeorm": "^1.1.3"
+    "typeorm": "^1.1.3",
+    "zod": "^4.6.7"
   },
   "devDependencies": {
+    "@sonar/scan": "^5.1.0",
     "@types/node": "^26.6.6",
+    "c8": "^12.0.0",
     "tsx": "^4.23.15",
     "typescript": "^7.0.2"
+  },
+  "engines": {
+    "node": ">=22.18"
   }
 }

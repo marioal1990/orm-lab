@@ -1,0 +1,47 @@
+{
+  "name": "prisma-lab",
+  "version": "1.0.0",
+  "description": "Laboratorio de Prisma ORM 7 con PostgreSQL",
+  "main": "dist/index.js",
+  "scripts": {
+    "dev": "tsx --env-file=.env src/index.ts",
+    "seed": "tsx --env-file=.env src/seed.ts",
+    "consultas": "tsx --env-file=.env src/consultas.ts",
+    "tx": "tsx --env-file=.env src/transacciones.ts",
+    "errores": "tsx --env-file=.env src/errores.ts",
+    "generate": "prisma generate",
+    "migrate:dev": "prisma migrate dev",
+    "migrate:deploy": "prisma migrate deploy",
+    "migrate:status": "prisma migrate status",
+    "studio": "prisma studio",
+    "test": "tsx --env-file=.env.test --test --test-concurrency=1 \"test/**/*.test.ts\"",
+    "test:coverage": "c8 npm test",
+    "sonar": "npm run test:coverage && node --env-file=../.env.sonar ./node_modules/@sonar/scan/bin/sonar-scanner.js",
+    "typecheck": "tsc",
+    "build": "prisma generate && tsc -p tsconfig.build.json",
+    "start": "node --env-file=.env dist/index.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "module",
+  "devDependencies": {
+    "@sonar/scan": "^5.1.0",
+    "@types/node": "^26.6.6",
+    "@types/pg": "^8.23.1",
+    "c8": "^12.0.0",
+    "prisma": "^7.10.1",
+    "tsx": "^4.23.15",
+    "typescript": "^7.0.2"
+  },
+  "dependencies": {
+    "@prisma/adapter-pg": "^7.10.1",
+    "@prisma/client": "^7.10.1",
+    "dotenv": "^18.0.10",
+    "pg": "^8.23.1",
+    "zod": "^4.6.7"
+  },
+  "engines": {
+    "node": ">=22.18"
+  }
+}

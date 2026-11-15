@@ -1,0 +1,23 @@
+{
+  // Configuración para desarrollo y verificación de tipos (src + test).
+  // El build usa tsconfig.build.json, que extiende este archivo.
+  "compilerOptions": {
+    "module": "nodenext",
+    "target": "esnext",
+    "types": ["node"],
+
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "exactOptionalPropertyTypes": true,
+
+    "verbatimModuleSyntax": true,
+    "isolatedModules": true,
+    "noUncheckedSideEffectImports": true,
+    "moduleDetection": "force",
+    "skipLibCheck": true,
+
+    "sourceMap": true,
+    "noEmit": true
+  },
+  "include": ["src", "test", "drizzle.config.ts"]
+}

@@ -1,0 +1,26 @@
+{
+  "all": true,
+  "src": [
+    "src"
+  ],
+  "extension": [
+    ".ts"
+  ],
+  "include": [
+    "src/**/*.ts"
+  ],
+  "exclude": [
+    "src/generated/**",
+    "test/**",
+    "src/index.ts",
+    "src/seed.ts",
+    "src/consultas.ts",
+    "src/transacciones.ts",
+    "src/errores.ts"
+  ],
+  "reporter": [
+    "lcov",
+    "text-summary"
+  ],
+  "report-dir": "coverage"
+}
