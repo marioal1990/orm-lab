@@ -1,5 +1,7 @@
-import type { Cliente, Pedido, Prisma, PrismaClient } from "../generated/prisma/client.js";
+import { Prisma } from "../generated/prisma/client.js";
+import type { Cliente, Pedido, PrismaClient } from "../generated/prisma/client.js";
 import type { CrearClienteConPedidosDto, CrearClienteDto } from "../dtos/cliente.dto.js";
+import { ConflictoError } from "../errors.js";
 
 export interface TotalCliente {
   nombre: string;
@@ -9,37 +11,69 @@ export interface TotalCliente {
 
 export type ClienteConPedidos = Cliente & { pedidos: Pedido[] };
 
+/** P2002 = violación de restricción única (en este modelo, solo el email). */
+export function esEmailDuplicado(e: unknown): boolean {
+  return e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2002";
+}
+
 /**
  * Lógica de negocio de clientes (equivalente a un @Service de Spring).
- * Recibe DTOs ya validados con Zod; la validación ocurre en la frontera.
+ * Recibe DTOs ya validados con Zod; la validación ocurre en la frontera (el controlador).
  */
 export class ClienteService {
   constructor(private readonly prisma: PrismaClient) {}
 
-  crear(dto: CrearClienteDto): Promise<Cliente> {
-    return this.prisma.cliente.create({
-      data: { email: dto.email, nombre: dto.nombre, telefono: dto.telefono ?? null },
-    });
+  listar(): Promise<ClienteConPedidos[]> {
+    return this.prisma.cliente.findMany({ include: { pedidos: true }, orderBy: { id: "asc" } });
+  }
+
+  buscarPorId(id: number): Promise<ClienteConPedidos | null> {
+    return this.prisma.cliente.findUnique({ where: { id }, include: { pedidos: true } });
   }
 
   buscarPorEmail(email: string): Promise<ClienteConPedidos | null> {
     return this.prisma.cliente.findUnique({ where: { email }, include: { pedidos: true } });
   }
 
+  async crear(dto: CrearClienteDto): Promise<Cliente> {
+    try {
+      return await this.prisma.cliente.create({
+        data: { email: dto.email, nombre: dto.nombre, telefono: dto.telefono ?? null },
+      });
+    } catch (e) {
+      if (esEmailDuplicado(e)) throw new ConflictoError(`Ya existe un cliente con el email ${dto.email}`);
+      throw e;
+    }
+  }
+
   /**
    * Crea el cliente y sus pedidos con un "nested write".
    * Prisma lo ejecuta en una transacción: si un pedido falla, no se guarda nada.
    */
-  crearConPedidos(dto: CrearClienteConPedidosDto): Promise<ClienteConPedidos> {
-    return this.prisma.cliente.create({
-      data: {
-        email: dto.email,
-        nombre: dto.nombre,
-        telefono: dto.telefono ?? null,
-        pedidos: { create: dto.pedidos.map((p) => ({ total: p.total })) },
-      },
-      include: { pedidos: true },
-    });
+  async crearConPedidos(dto: CrearClienteConPedidosDto): Promise<ClienteConPedidos> {
+    try {
+      return await this.prisma.cliente.create({
+        data: {
+          email: dto.email,
+          nombre: dto.nombre,
+          telefono: dto.telefono ?? null,
+          pedidos: { create: dto.pedidos.map((p) => ({ total: p.total })) },
+        },
+        include: { pedidos: true },
+      });
+    } catch (e) {
+      if (esEmailDuplicado(e)) throw new ConflictoError(`Ya existe un cliente con el email ${dto.email}`);
+      throw e;
+    }
+  }
+
+  /**
+   * Devuelve false si el cliente no existía. Se usa deleteMany para no lanzar error
+   * (delete lanza P2025 si no encuentra el registro). Los pedidos se borran en cascada.
+   */
+  async eliminar(id: number): Promise<boolean> {
+    const { count } = await this.prisma.cliente.deleteMany({ where: { id } });
+    return count > 0;
   }
 
   async totalesPorCliente(): Promise<TotalCliente[]> {

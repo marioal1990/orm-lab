@@ -1,0 +1,53 @@
+### Peticiones de ejemplo para la API de clientes.
+### Ábrelo en VS Code con la extensión "REST Client" y haz clic en "Send Request".
+### Cambia @baseUrl según el proyecto que tengas levantado (npm run dev):
+###   TypeORM -> 3001 · Prisma -> 3002 · Drizzle -> 3003
+
+@baseUrl = http://localhost:3001
+
+### Estado de la API
+GET {{baseUrl}}/health
+
+### Crear un cliente sin pedidos
+POST {{baseUrl}}/clientes
+Content-Type: application/json
+
+{
+  "email": "ana@example.com",
+  "nombre": "Ana García",
+  "telefono": "+56911111111"
+}
+
+### Crear un cliente con pedidos
+POST {{baseUrl}}/clientes
+Content-Type: application/json
+
+{
+  "email": "bruno@example.com",
+  "nombre": "Bruno López",
+  "pedidos": [{ "total": "15990.00" }, { "total": "4990.00" }]
+}
+
+### Datos inválidos -> 400
+POST {{baseUrl}}/clientes
+Content-Type: application/json
+
+{
+  "email": "no-es-email",
+  "nombre": "A"
+}
+
+### Listar clientes
+GET {{baseUrl}}/clientes
+
+### Detalle de un cliente (con pedidos)
+GET {{baseUrl}}/clientes/1
+
+### Totales por cliente
+GET {{baseUrl}}/clientes/reportes/totales
+
+### Clientes sin pedidos
+GET {{baseUrl}}/clientes/reportes/sin-pedidos
+
+### Eliminar un cliente -> 204
+DELETE {{baseUrl}}/clientes/1

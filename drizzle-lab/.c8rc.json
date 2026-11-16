@@ -17,11 +17,17 @@
     "src/consultas.ts",
     "src/transacciones.ts",
     "src/errores.ts",
-    "src/migrate.ts"
+    "src/migrate.ts",
+    "src/server.ts"
   ],
   "reporter": [
     "lcov",
     "text-summary"
   ],
-  "report-dir": "coverage"
+  "report-dir": "coverage",
+  "check-coverage": true,
+  "statements": 100,
+  "branches": 100,
+  "functions": 100,
+  "lines": 100
 }

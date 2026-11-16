@@ -1,7 +1,7 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import type { Cliente, Pedido } from "../src/db/schema.js";
-import { toClienteResponse } from "../src/mappers/cliente.mapper.js";
+import { toClienteDetalleResponse, toClienteResponse } from "../src/mappers/cliente.mapper.js";
 import { toPedidoResponse } from "../src/mappers/pedido.mapper.js";
 
 // Pruebas unitarias: los mappers son funciones puras, no necesitan base de datos.
@@ -38,5 +38,18 @@ describe("toPedidoResponse()", () => {
 
   it("normaliza el total que llega sin decimales desde la API relacional", () => {
     assert.equal(toPedidoResponse({ ...pedido, total: "15990" }).total, "15990.00");
+  });
+});
+
+describe("toClienteDetalleResponse()", () => {
+  it("incluye teléfono y pedidos", () => {
+    assert.deepEqual(toClienteDetalleResponse({ ...cliente, telefono: "+56911111111", pedidos: [pedido] }), {
+      id: 1,
+      email: "ana@test.cl",
+      nombre: "Ana",
+      cantidadPedidos: 1,
+      telefono: "+56911111111",
+      pedidos: [{ id: 10, total: "15990.00", clienteId: 1 }],
+    });
   });
 });

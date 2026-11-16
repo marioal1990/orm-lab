@@ -2,6 +2,7 @@ import { after, before, beforeEach, describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { execSync } from "node:child_process";
 import { prisma } from "../src/db.js";
+import { ConflictoError } from "../src/errors.js";
 import { ClienteService } from "../src/services/cliente.services.js";
 
 // Prueba de integración: usa un Postgres real (la base de .env.test).
@@ -36,7 +37,7 @@ describe("ClienteService (Prisma)", () => {
 
   it("rechaza emails duplicados", async () => {
     await service.crear({ email: "ana@test.cl", nombre: "Ana" });
-    await assert.rejects(service.crear({ email: "ana@test.cl", nombre: "Otra Ana" }));
+    await assert.rejects(service.crear({ email: "ana@test.cl", nombre: "Otra Ana" }), ConflictoError);
   });
 
   it("crea un cliente con sus pedidos", async () => {
@@ -71,6 +72,31 @@ describe("ClienteService (Prisma)", () => {
       { nombre: "Ana", cantidad: 2, total: 20980 },
       { nombre: "Carla", cantidad: 0, total: 0 },
     ]);
+  });
+
+  it("busca por id y elimina", async () => {
+    const ana = await service.crearConPedidos({ email: "ana@test.cl", nombre: "Ana", pedidos: [{ total: "15990.00" }] });
+    assert.equal((await service.buscarPorId(ana.id))?.pedidos.length, 1);
+
+    assert.equal(await service.eliminar(ana.id), true);
+    assert.equal(await service.buscarPorId(ana.id), null);
+    assert.equal(await service.eliminar(ana.id), false);
+  });
+
+  it("crearConPedidos con email repetido lanza ConflictoError", async () => {
+    await service.crear({ email: "ana@test.cl", nombre: "Ana" });
+    await assert.rejects(
+      service.crearConPedidos({ email: "ana@test.cl", nombre: "Otra Ana", pedidos: [{ total: "100.00" }] }),
+      ConflictoError
+    );
+  });
+
+  it("propaga sin cambios los errores de base de datos que no son de email duplicado", async () => {
+    // telefono es varchar(20): Postgres rechaza el valor (en la API, el DTO lo habría impedido antes)
+    await assert.rejects(
+      service.crear({ email: "ana@test.cl", nombre: "Ana", telefono: "9".repeat(25) }),
+      (e) => e instanceof Error && !(e instanceof ConflictoError)
+    );
   });
 
   it("lista solo los clientes sin pedidos", async () => {

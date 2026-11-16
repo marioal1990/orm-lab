@@ -2,9 +2,10 @@
   "name": "prisma-lab",
   "version": "1.0.0",
   "description": "Laboratorio de Prisma ORM 7 con PostgreSQL",
-  "main": "dist/index.js",
+  "main": "dist/server.js",
   "scripts": {
-    "dev": "tsx --env-file=.env src/index.ts",
+    "dev": "tsx watch --env-file=.env src/server.ts",
+    "demo": "tsx --env-file=.env src/index.ts",
     "seed": "tsx --env-file=.env src/seed.ts",
     "consultas": "tsx --env-file=.env src/consultas.ts",
     "tx": "tsx --env-file=.env src/transacciones.ts",
@@ -19,7 +20,7 @@
     "sonar": "npm run test:coverage && node --env-file=../.env.sonar ./node_modules/@sonar/scan/bin/sonar-scanner.js",
     "typecheck": "tsc",
     "build": "prisma generate && tsc -p tsconfig.build.json",
-    "start": "node --env-file=.env dist/index.js"
+    "start": "node --env-file=.env dist/server.js"
   },
   "keywords": [],
   "author": "",
@@ -27,10 +28,13 @@
   "type": "module",
   "devDependencies": {
     "@sonar/scan": "^5.1.0",
+    "@types/express": "^5.0.6",
     "@types/node": "^26.6.6",
     "@types/pg": "^8.23.1",
+    "@types/supertest": "^7.2.1",
     "c8": "^12.0.0",
     "prisma": "^7.10.1",
+    "supertest": "^7.3.2",
     "tsx": "^4.23.15",
     "typescript": "^7.0.2"
   },
@@ -38,6 +42,7 @@
     "@prisma/adapter-pg": "^7.10.1",
     "@prisma/client": "^7.10.1",
     "dotenv": "^18.0.10",
+    "express": "^5.3.0",
     "pg": "^8.23.1",
     "zod": "^4.6.7"
   },

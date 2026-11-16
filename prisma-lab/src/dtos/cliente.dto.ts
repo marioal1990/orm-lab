@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { CrearPedidoSchema } from "./pedido.dto.js";
+import type { PedidoResponseDto } from "./pedido.dto.js";
 
 // --- Entrada ---
 export const CrearClienteSchema = z.object({
@@ -23,3 +24,13 @@ export interface ClienteResponseDto {
   nombre: string;
   cantidadPedidos: number;
 }
+
+export interface ClienteDetalleResponseDto extends ClienteResponseDto {
+  telefono: string | null;
+  pedidos: PedidoResponseDto[];
+}
+
+// --- Parámetros de ruta ---
+export const ParamsIdSchema = z.object({
+  id: z.coerce.number().int("El id debe ser un número entero").positive("El id debe ser positivo"),
+});

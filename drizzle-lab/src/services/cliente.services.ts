@@ -1,8 +1,11 @@
-import { asc, count, desc, eq, getTableColumns, isNull, sql } from "drizzle-orm";
+import { DrizzleQueryError, asc, count, desc, eq, getTableColumns, isNull, sql } from "drizzle-orm";
+import { DatabaseError } from "pg";
 import type { DB } from "../db/index.js";
 import { clientes, pedidos } from "../db/schema.js";
 import type { Cliente, Pedido } from "../db/schema.js";
 import type { CrearClienteConPedidosDto, CrearClienteDto } from "../dtos/cliente.dto.js";
+import { ConflictoError } from "../errors.js";
+import { primero } from "../utils/primero.js";
 
 export interface TotalCliente {
   nombre: string;
@@ -12,20 +15,29 @@ export interface TotalCliente {
 
 export type ClienteConPedidos = Cliente & { pedidos: Pedido[] };
 
+/** 23505 = unique_violation de PostgreSQL. Drizzle envuelve el error del driver en `cause`. */
+export function esEmailDuplicado(e: unknown): boolean {
+  const causa = e instanceof DrizzleQueryError ? e.cause : e;
+  return causa instanceof DatabaseError && causa.code === "23505";
+}
+
 /**
  * Lógica de negocio de clientes (equivalente a un @Service de Spring).
- * Recibe DTOs ya validados con Zod; la validación ocurre en la frontera.
+ * Recibe DTOs ya validados con Zod; la validación ocurre en la frontera (el controlador).
  */
 export class ClienteService {
   constructor(private readonly db: DB) {}
 
-  async crear(dto: CrearClienteDto): Promise<Cliente> {
-    const [cliente] = await this.db
-      .insert(clientes)
-      .values({ email: dto.email, nombre: dto.nombre, telefono: dto.telefono ?? null })
-      .returning();
-    if (!cliente) throw new Error("No se pudo crear el cliente");
-    return cliente;
+  listar(): Promise<ClienteConPedidos[]> {
+    return this.db.query.clientes.findMany({ with: { pedidos: true }, orderBy: asc(clientes.id) });
+  }
+
+  async buscarPorId(id: number): Promise<ClienteConPedidos | null> {
+    const cliente = await this.db.query.clientes.findFirst({
+      where: eq(clientes.id, id),
+      with: { pedidos: true },
+    });
+    return cliente ?? null;
   }
 
   async buscarPorEmail(email: string): Promise<ClienteConPedidos | null> {
@@ -37,23 +49,48 @@ export class ClienteService {
     return cliente ?? null;
   }
 
-  /** Crea el cliente y sus pedidos en una sola transacción: todo o nada. */
-  crearConPedidos(dto: CrearClienteConPedidosDto): Promise<ClienteConPedidos> {
-    return this.db.transaction(async (tx) => {
-      const [cliente] = await tx
+  async crear(dto: CrearClienteDto): Promise<Cliente> {
+    try {
+      const filas = await this.db
         .insert(clientes)
         .values({ email: dto.email, nombre: dto.nombre, telefono: dto.telefono ?? null })
         .returning();
-      if (!cliente) throw new Error("No se pudo crear el cliente");
+      return primero(filas);
+    } catch (e) {
+      if (esEmailDuplicado(e)) throw new ConflictoError(`Ya existe un cliente con el email ${dto.email}`);
+      throw e;
+    }
+  }
 
-      // Un solo INSERT con varias filas
-      const nuevos = await tx
-        .insert(pedidos)
-        .values(dto.pedidos.map((p) => ({ total: p.total, clienteId: cliente.id })))
-        .returning();
+  /** Crea el cliente y sus pedidos en una sola transacción: todo o nada. */
+  async crearConPedidos(dto: CrearClienteConPedidosDto): Promise<ClienteConPedidos> {
+    try {
+      return await this.db.transaction(async (tx) => {
+        const cliente = primero(
+          await tx
+            .insert(clientes)
+            .values({ email: dto.email, nombre: dto.nombre, telefono: dto.telefono ?? null })
+            .returning()
+        );
 
-      return { ...cliente, pedidos: nuevos };
-    });
+        // Un solo INSERT con varias filas
+        const nuevos = await tx
+          .insert(pedidos)
+          .values(dto.pedidos.map((p) => ({ total: p.total, clienteId: cliente.id })))
+          .returning();
+
+        return { ...cliente, pedidos: nuevos };
+      });
+    } catch (e) {
+      if (esEmailDuplicado(e)) throw new ConflictoError(`Ya existe un cliente con el email ${dto.email}`);
+      throw e;
+    }
+  }
+
+  /** Devuelve false si el cliente no existía. Sus pedidos se borran en cascada (ON DELETE CASCADE). */
+  async eliminar(id: number): Promise<boolean> {
+    const borrados = await this.db.delete(clientes).where(eq(clientes.id, id)).returning({ id: clientes.id });
+    return borrados.length > 0;
   }
 
   async totalesPorCliente(): Promise<TotalCliente[]> {

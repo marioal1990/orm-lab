@@ -5,9 +5,9 @@ Laboratorio para aprender los tres ORMs más usados de Node.js/TypeScript con **
 
 | Proyecto | ORM | Estado |
 |---|---|---|
-| [`typeorm-lab/`](typeorm-lab) | TypeORM 1.x | ✅ Entidades, consultas, QueryBuilder, migraciones, transacciones, DTOs y pruebas |
-| [`prisma-lab/`](prisma-lab) | Prisma ORM 7 | ✅ Schema, consultas, `$queryRaw`, migraciones, transacciones, DTOs y pruebas |
-| [`drizzle-lab/`](drizzle-lab) | Drizzle ORM 0.45 | ✅ Schema en TS, API SQL y relacional, migraciones, transacciones, DTOs y pruebas |
+| [`typeorm-lab/`](typeorm-lab) | TypeORM 1.x | ✅ Entidades, consultas, QueryBuilder, migraciones, transacciones, API REST, DTOs y pruebas |
+| [`prisma-lab/`](prisma-lab) | Prisma ORM 7 | ✅ Schema, consultas, `$queryRaw`, migraciones, transacciones, API REST, DTOs y pruebas |
+| [`drizzle-lab/`](drizzle-lab) | Drizzle ORM 0.45 | ✅ Schema en TS, API SQL y relacional, migraciones, transacciones, API REST, DTOs y pruebas |
 
 ---
 
@@ -19,11 +19,12 @@ Laboratorio para aprender los tres ORMs más usados de Node.js/TypeScript con **
 4. [TypeORM: paso a paso](#4-typeorm-paso-a-paso)
 5. [Prisma: paso a paso](#5-prisma-paso-a-paso)
 6. [Drizzle: paso a paso](#6-drizzle-paso-a-paso)
-7. [Pruebas](#7-pruebas)
-8. [Construir y ejecutar en modo producción](#8-construir-y-ejecutar-en-modo-producción)
-9. [Calidad de código con SonarQube](#9-calidad-de-código-con-sonarqube)
-10. [Arquitectura de cada proyecto](#10-arquitectura-de-cada-proyecto)
-11. [Solución de problemas](#11-solución-de-problemas)
+7. [API REST (controladores)](#7-api-rest-controladores)
+8. [Pruebas](#8-pruebas)
+9. [Construir y ejecutar en modo producción](#9-construir-y-ejecutar-en-modo-producción)
+10. [Calidad de código con SonarQube](#10-calidad-de-código-con-sonarqube)
+11. [Arquitectura de cada proyecto](#11-arquitectura-de-cada-proyecto)
+12. [Solución de problemas](#12-solución-de-problemas)
 
 ---
 
@@ -50,6 +51,7 @@ docker -v
 orm-lab/
 ├── README.md
 ├── docker-compose.yml            ← SonarQube Community Build
+├── api.http                      ← peticiones de ejemplo (extensión REST Client de VS Code)
 ├── .env.sonar / .env.sonar.example   ← URL y token de SonarQube
 ├── scripts/
 │   └── sonar-report.mjs          ← genera reports/sonar-report.html
@@ -60,7 +62,12 @@ orm-lab/
 │   ├── tsconfig.json             ← desarrollo y verificación de tipos (src + test)
 │   ├── tsconfig.build.json       ← compila src/ → dist/
 │   ├── src/
-│   │   ├── index.ts              ← demo: JSON → DTO → servicio → respuesta
+│   │   ├── server.ts             ← levanta la API REST (npm run dev)
+│   │   ├── app.ts                ← arma la app Express (rutas + middlewares)
+│   │   ├── controllers/          ← controladores REST (como @RestController)
+│   │   ├── middlewares/          ← manejo de errores (como @RestControllerAdvice)
+│   │   ├── errors.ts             ← errores de negocio (ConflictoError)
+│   │   ├── index.ts              ← demo por consola: JSON → DTO → servicio → respuesta
 │   │   ├── config.ts             ← lee y valida variables de entorno
 │   │   ├── data-source.ts        ← configuración de TypeORM
 │   │   ├── entities/             ← Cliente.ts, Pedido.ts (@Entity)
@@ -80,7 +87,8 @@ orm-lab/
 │   │   ├── schema.prisma         ← el modelo de datos
 │   │   └── migrations/           ← migraciones en SQL
 │   ├── src/
-│   │   ├── index.ts · db.ts · config.ts
+│   │   ├── server.ts · app.ts · index.ts · db.ts · config.ts · errors.ts
+│   │   ├── controllers/ · middlewares/
 │   │   ├── generated/prisma/     ← cliente generado (no se sube a git)
 │   │   ├── dtos/ · mappers/ · services/ · utils/
 │   │   ├── seed.ts · consultas.ts · transacciones.ts · errores.ts
@@ -92,7 +100,8 @@ orm-lab/
     ├── drizzle.config.ts         ← configuración de la CLI drizzle-kit
     ├── drizzle/                  ← migraciones SQL generadas + metadatos (meta/)
     ├── src/
-    │   ├── index.ts · config.ts
+    │   ├── server.ts · app.ts · index.ts · config.ts · errors.ts
+    │   ├── controllers/ · middlewares/
     │   ├── migrate.ts            ← aplica migraciones desde código (producción)
     │   ├── db/
     │   │   ├── schema.ts         ← tablas y relaciones en TypeScript
@@ -184,7 +193,8 @@ npm run migration:show     # [X] = aplicada, [ ] = pendiente
 
 ```bash
 npm run seed        # borra y carga datos de ejemplo (Ana, Bruno, Carla)
-npm run dev         # demo completa: valida un JSON con Zod, crea el cliente y muestra la respuesta
+npm run dev         # levanta la API REST en http://localhost:3001 (se reinicia al guardar)
+npm run demo        # demo por consola: valida un JSON con Zod, crea el cliente y muestra la respuesta
 npm run consultas   # find, findOneBy, relations, QueryBuilder y agregaciones
 npm run tx          # transacción con rollback forzado
 ```
@@ -210,7 +220,8 @@ npm run tx          # transacción con rollback forzado
 
 | Script | Qué hace |
 |---|---|
-| `npm run dev` | Ejecuta `src/index.ts` con `tsx` |
+| `npm run dev` | Levanta la API REST con recarga automática (`tsx watch`) |
+| `npm run demo` | Ejecuta la demo por consola (`src/index.ts`) |
 | `npm run seed` | Reinicia los datos de ejemplo |
 | `npm run consultas` | Ejemplos de consultas |
 | `npm run tx` | Ejemplo de transacción |
@@ -220,7 +231,7 @@ npm run tx          # transacción con rollback forzado
 | `npm test` | Pruebas (usa `.env.test`) |
 | `npm run typecheck` | Verifica tipos de `src/` y `test/` sin generar archivos |
 | `npm run build` | Compila a `dist/` |
-| `npm start` | Ejecuta la versión compilada |
+| `npm start` | Levanta la API compilada (`dist/server.js`) |
 | `npm run migration:run:prod` | Aplica migraciones usando el código compilado |
 
 ---
@@ -271,7 +282,8 @@ npm run generate         # genera el cliente tipado en src/generated/prisma
 
 ```bash
 npm run seed        # borra y carga datos de ejemplo (con nested writes)
-npm run dev         # demo completa: JSON → DTO → servicio → respuesta
+npm run dev         # levanta la API REST en http://localhost:3002
+npm run demo        # demo por consola: JSON → DTO → servicio → respuesta
 npm run consultas   # findMany, include, some/none, groupBy, _count y $queryRaw
 npm run tx          # transacción interactiva con rollback + transacción por lotes
 npm run errores     # captura del error P2002 (email duplicado)
@@ -298,7 +310,8 @@ las migraciones existentes sin crear nuevas.
 
 | Script | Qué hace |
 |---|---|
-| `npm run dev` | Ejecuta `src/index.ts` con `tsx` |
+| `npm run dev` | Levanta la API REST con recarga automática (`tsx watch`) |
+| `npm run demo` | Ejecuta la demo por consola (`src/index.ts`) |
 | `npm run seed` / `consultas` / `tx` / `errores` | Scripts de práctica |
 | `npm run generate` | Genera el cliente de Prisma |
 | `npm run migrate:dev -- --name x` | Crea y aplica una migración (desarrollo) |
@@ -308,7 +321,7 @@ las migraciones existentes sin crear nuevas.
 | `npm test` | Pruebas (usa `.env.test`) |
 | `npm run typecheck` | Verifica tipos sin generar archivos |
 | `npm run build` | Genera el cliente y compila a `dist/` |
-| `npm start` | Ejecuta la versión compilada |
+| `npm start` | Levanta la API compilada (`dist/server.js`) |
 
 ---
 
@@ -354,7 +367,8 @@ npm run db:migrate     # aplica las migraciones de drizzle/
 
 ```bash
 npm run seed        # borra y carga datos de ejemplo
-npm run dev         # demo completa: JSON → DTO → servicio → respuesta
+npm run dev         # levanta la API REST en http://localhost:3003
+npm run demo        # demo por consola: JSON → DTO → servicio → respuesta
 npm run consultas   # API SQL (select/join/groupBy) y API relacional (db.query + with)
 npm run tx          # rollback con error y rollback explícito con tx.rollback()
 npm run errores     # captura del error 23505 (email duplicado)
@@ -393,7 +407,8 @@ para prototipar, pero equivale a `synchronize: true`: no lo uses en producción.
 
 | Script | Qué hace |
 |---|---|
-| `npm run dev` | Ejecuta `src/index.ts` con `tsx` |
+| `npm run dev` | Levanta la API REST con recarga automática (`tsx watch`) |
+| `npm run demo` | Ejecuta la demo por consola (`src/index.ts`) |
 | `npm run seed` / `consultas` / `tx` / `errores` | Scripts de práctica |
 | `npm run db:generate -- --name x` | Genera una migración a partir del schema |
 | `npm run db:migrate` | Aplica migraciones con la CLI |
@@ -402,12 +417,113 @@ para prototipar, pero equivale a `synchronize: true`: no lo uses en producción.
 | `npm test` | Pruebas (usa `.env.test`) |
 | `npm run typecheck` | Verifica tipos sin generar archivos |
 | `npm run build` | Compila a `dist/` |
-| `npm start` | Ejecuta la versión compilada |
+| `npm start` | Levanta la API compilada (`dist/server.js`) |
 | `npm run migrate:prod` | Aplica migraciones desde el código compilado (`dist/migrate.js`) |
 
 ---
 
-## 7. Pruebas
+## 7. API REST (controladores)
+
+Los tres proyectos exponen **la misma API REST** con [Express 5](https://expressjs.com/). El
+controlador es idéntico en los tres: solo cambia el servicio (y el ORM) que hay detrás.
+
+### 7.1 Levantar la API
+
+```bash
+cd typeorm-lab        # o prisma-lab / drizzle-lab
+npm run dev
+```
+
+| Proyecto | URL por defecto |
+|---|---|
+| TypeORM | http://localhost:3001 |
+| Prisma | http://localhost:3002 |
+| Drizzle | http://localhost:3003 |
+
+Los puertos son distintos para que puedas levantar los tres a la vez. Para cambiarlo, agrega
+`PORT=...` en el `.env` del proyecto. `npm run dev` usa `tsx watch`: la API se reinicia sola cada vez
+que guardas un archivo.
+
+### 7.2 Endpoints
+
+| Método | Ruta | Respuesta |
+|---|---|---|
+| `GET` | `/health` | `200` `{ "status": "ok" }` |
+| `GET` | `/clientes` | `200` lista de clientes con su cantidad de pedidos |
+| `POST` | `/clientes` | `201` cliente creado + cabecera `Location`. Acepta `pedidos` opcionales |
+| `GET` | `/clientes/:id` | `200` detalle con teléfono y pedidos · `404` si no existe |
+| `DELETE` | `/clientes/:id` | `204` sin cuerpo (borra también sus pedidos) · `404` si no existe |
+| `GET` | `/clientes/reportes/totales` | `200` cantidad y total de pedidos por cliente |
+| `GET` | `/clientes/reportes/sin-pedidos` | `200` clientes que no tienen pedidos |
+
+Cuerpo de `POST /clientes`:
+
+```json
+{
+  "email": "bruno@example.com",
+  "nombre": "Bruno López",
+  "telefono": "+56911111111",
+  "pedidos": [{ "total": "15990.00" }, { "total": "4990.00" }]
+}
+```
+
+`telefono` y `pedidos` son opcionales. Si viene `pedidos`, debe tener al menos uno, y el cliente se
+crea junto con sus pedidos en una sola transacción.
+
+### 7.3 Errores
+
+Todos los errores responden JSON con un campo `error`:
+
+| Situación | Código | Ejemplo de respuesta |
+|---|---|---|
+| Datos inválidos (Zod) | `400` | `{ "error": "Datos inválidos", "detalles": [{ "campo": "email", "mensaje": "Email inválido" }] }` |
+| JSON mal formado | `400` | `{ "error": "El cuerpo de la petición no es un JSON válido" }` |
+| Id no numérico (`/clientes/abc`) | `400` | `detalles` con `campo: "id"` |
+| Cliente no encontrado | `404` | `{ "error": "No existe el cliente 99" }` |
+| Ruta inexistente | `404` | `{ "error": "Ruta no encontrada: GET /x" }` |
+| Email repetido | `409` | `{ "error": "Ya existe un cliente con el email ..." }` |
+| Error inesperado | `500` | `{ "error": "Error interno del servidor" }` (el detalle va solo al log) |
+
+### 7.4 Probar la API a mano
+
+**Con VS Code:** instala la extensión **REST Client**, abre `api.http` (en la raíz de `orm-lab`)
+y haz clic en *Send Request* sobre cada petición. Cambia `@baseUrl` según el proyecto.
+
+**Con curl:**
+
+```bash
+curl -i -X POST http://localhost:3001/clientes \
+  -H "Content-Type: application/json" \
+  -d '{"email":"ana@example.com","nombre":"Ana García","pedidos":[{"total":"15990.00"}]}'
+
+curl http://localhost:3001/clientes
+curl http://localhost:3001/clientes/1
+curl http://localhost:3001/clientes/reportes/totales
+curl -i -X DELETE http://localhost:3001/clientes/1
+```
+
+### 7.5 Cómo está organizado
+
+| Archivo | Rol | Equivalente en Spring |
+|---|---|---|
+| `src/server.ts` | Crea las dependencias y abre el puerto; cierra la base al detenerse | Clase con `main` + `SpringApplication.run` |
+| `src/app.ts` | Arma la app: `express.json()`, rutas, 404 y manejador de errores | Configuración de Spring MVC |
+| `src/controllers/cliente.controller.ts` | Valida la entrada, llama al servicio y arma la respuesta | `@RestController` |
+| `src/middlewares/errores.ts` | Convierte excepciones en respuestas HTTP | `@RestControllerAdvice` + `@ExceptionHandler` |
+| `src/errors.ts` | `ConflictoError`: error de negocio sin conocimiento de HTTP | Excepción de dominio |
+| `src/services/cliente.services.ts` | Lógica de negocio y acceso a datos con el ORM | `@Service` + repositorio |
+
+Decisiones:
+- `app.ts` está separado de `server.ts` para poder probar la API con **supertest** sin abrir un puerto
+  (como `MockMvc`).
+- El controlador no captura errores: **Express 5** envía automáticamente al manejador de errores
+  cualquier excepción de un controlador `async`.
+- Cada servicio traduce el error de email duplicado de su ORM (`QueryFailedError` en TypeORM, `P2002`
+  en Prisma, `DrizzleQueryError` en Drizzle) a un `ConflictoError`. Así el controlador no depende del ORM.
+
+---
+
+## 8. Pruebas
 
 Los tres proyectos usan el **test runner nativo de Node** (`node:test` + `node:assert`) ejecutado con `tsx`.
 No requiere dependencias extra.
@@ -422,7 +538,14 @@ npm test
 | `test/env.test.ts` | Unitaria | `env()` devuelve el valor o falla con un mensaje claro |
 | `test/cliente.dto.test.ts` | Unitaria | Validaciones Zod: email, nombre, totales, al menos un pedido |
 | `test/cliente.mapper.test.ts` | Unitaria | Conversión entidad → DTO de respuesta |
-| `test/cliente.service.test.ts` | Integración | `ClienteService` contra PostgreSQL real: crear, buscar, duplicados, rollback, totales y clientes sin pedidos |
+| `test/cliente.service.test.ts` | Integración | `ClienteService` contra PostgreSQL real: crear, buscar, eliminar, duplicados, rollback, totales y clientes sin pedidos |
+| `test/clientes.api.test.ts` | Integración (API) | Endpoints con **supertest**: códigos HTTP, cabecera `Location`, validaciones (400), no encontrado (404), duplicado (409) y JSON mal formado |
+| `test/errores.middleware.test.ts` | Unitaria | Middleware de errores: cada tipo de error y su código HTTP (400, 409, 500) y la respuesta 404 |
+| `test/errores-db.test.ts` | Unitaria | Cómo cada ORM reconoce el error de email duplicado |
+| `test/logging.test.ts` | Integración | `DB_LOGGING` muestra u oculta el SQL ejecutado (corre en un proceso aparte) |
+| `test/migraciones.test.ts` (TypeORM) | Unitaria + integración | Ruta de las migraciones en desarrollo y compilado; cada migración se revierte (`down`) y se vuelve a aplicar |
+| `test/schema.test.ts` (Drizzle) | Unitaria | Clave foránea `pedido → cliente` con borrado en cascada y email único |
+| `test/utils.test.ts` (Drizzle) | Unitaria | Helper `primero()` |
 
 Cómo funcionan las pruebas de integración:
 
@@ -436,6 +559,24 @@ Cómo funcionan las pruebas de integración:
 Las pruebas de los tres proyectos son **las mismas**: solo cambian el servicio y el setup. Es la mejor
 forma de comparar los ORMs.
 
+### Cobertura al 100 %
+
+Los tres proyectos tienen **100 % de cobertura** de sentencias, ramas, funciones y líneas, y `c8` lo exige:
+`npm run test:coverage` **falla** si alguna métrica baja de 100 % (`check-coverage` en `.c8rc.json`).
+
+```bash
+npm run test:coverage     # resumen en consola; detalle en coverage/lcov-report/index.html
+```
+
+Quedan fuera de la medición, a propósito:
+- Los puntos de entrada y scripts de demostración (`server.ts`, `index.ts`, `seed.ts`, `consultas.ts`,
+  `transacciones.ts`, `errores.ts`, `migrate.ts`): se ejecutan a mano y no tienen lógica propia que probar.
+- El cliente generado de Prisma (`src/generated/`).
+- En TypeORM, las entidades (`src/entities/`): son solo declaraciones. Al ejecutarlas con `tsx`, esbuild
+  agrega código propio para los decoradores, con ramas que ninguna prueba puede recorrer.
+
+Las mismas exclusiones están en `sonar.coverage.exclusions`, así que SonarQube muestra los mismos números.
+
 Para ejecutar un solo archivo:
 
 ```bash
@@ -444,7 +585,7 @@ npx tsx --env-file=.env.test --test test/cliente.dto.test.ts
 
 ---
 
-## 8. Construir y ejecutar en modo producción
+## 9. Construir y ejecutar en modo producción
 
 En desarrollo, `tsx` ejecuta TypeScript directamente. Para producción se compila a JavaScript:
 
@@ -453,7 +594,7 @@ En desarrollo, `tsx` ejecuta TypeScript directamente. Para producción se compil
 ```bash
 npm run build                 # src/ → dist/
 npm run migration:run:prod    # migraciones usando dist/
-npm start                     # node dist/index.js
+npm start                     # levanta la API compilada (dist/server.js)
 ```
 
 **Prisma**
@@ -461,7 +602,7 @@ npm start                     # node dist/index.js
 ```bash
 npm run build                 # prisma generate + src/ → dist/
 npm run migrate:deploy
-npm start
+npm start                     # levanta la API compilada
 ```
 
 **Drizzle**
@@ -469,7 +610,7 @@ npm start
 ```bash
 npm run build                 # src/ → dist/
 npm run migrate:prod          # migraciones desde dist/migrate.js (sin drizzle-kit)
-npm start
+npm start                     # levanta la API compilada
 ```
 
 Detalles:
@@ -481,13 +622,13 @@ Detalles:
 
 ---
 
-## 9. Calidad de código con SonarQube
+## 10. Calidad de código con SonarQube
 
 [SonarQube](https://www.sonarsource.com/products/sonarqube/) analiza el código en busca de bugs,
 vulnerabilidades, *code smells*, duplicación y falta de cobertura. Se usa la edición gratuita
 **Community Build** en Docker.
 
-### 9.1 Conceptos clave
+### 10.1 Conceptos clave
 
 | Concepto | Qué es |
 |---|---|
@@ -500,7 +641,7 @@ vulnerabilidades, *code smells*, duplicación y falta de cobertura. Se usa la ed
 | **Quality Gate** | Las condiciones que el proyecto debe cumplir para "aprobar". El de por defecto (*Sonar way*) evalúa el **código nuevo**: sin issues nuevos, cobertura ≥ 80 % y duplicación ≤ 3 % |
 | **Código nuevo** | Lo que cambió desde la versión anterior (`sonar.projectVersion`) o en los últimos días. En el primer análisis todo es código "viejo" |
 
-### 9.2 Levantar SonarQube
+### 10.2 Levantar SonarQube
 
 ```bash
 docker compose up -d sonarqube        # desde la raíz de orm-lab
@@ -518,7 +659,7 @@ docker logs -f sonarqube              # espera "SonarQube is operational" (1–2
 
 Para detenerlo: `docker compose stop sonarqube`. Los datos se conservan en volúmenes de Docker.
 
-### 9.3 Analizar un proyecto
+### 10.3 Analizar un proyecto
 
 Con PostgreSQL levantado (las pruebas de integración lo necesitan):
 
@@ -538,7 +679,7 @@ El primer análisis tarda más porque el scanner descarga su motor desde el serv
 Para ver solo la cobertura, sin SonarQube: `npm run test:coverage` (resumen en consola y detalle en
 `coverage/lcov-report/index.html`).
 
-### 9.4 Archivos de configuración
+### 10.4 Archivos de configuración
 
 | Archivo | Para qué |
 |---|---|
@@ -555,7 +696,7 @@ Decisiones de configuración:
 - Para que el scanner **falle si el Quality Gate no pasa** (útil en CI), descomenta
   `sonar.qualitygate.wait=true` en `sonar-project.properties`.
 
-### 9.5 Generar el reporte
+### 10.5 Generar el reporte
 
 La Community Build no exporta reportes en PDF (es una función de las ediciones pagadas), así que el
 repositorio incluye `scripts/sonar-report.mjs`, que consulta la Web API de SonarQube y genera un
@@ -574,7 +715,7 @@ abiertos (con enlace a cada uno en SonarQube) y los security hotspots. También 
 
 Para un solo proyecto: `node --env-file=.env.sonar scripts/sonar-report.mjs orm-lab-prisma`
 
-### 9.6 Cómo practicar con SonarQube
+### 10.6 Cómo practicar con SonarQube
 
 1. **Analiza los tres proyectos** y compara sus dashboards.
 2. **Provoca un issue a propósito**: por ejemplo, deja una variable sin usar o un `catch` vacío en un
@@ -588,25 +729,29 @@ Para un solo proyecto: `node --env-file=.env.sonar scripts/sonar-report.mjs orm-
 
 ---
 
-## 10. Arquitectura de cada proyecto
+## 11. Arquitectura de cada proyecto
 
 ```
-JSON de entrada
+Petición HTTP
    │
    ▼
-DTO (Zod)            src/dtos/       valida en la frontera (como Bean Validation)
-   │  datos válidos y tipados
-   ▼
-Servicio             src/services/   lógica de negocio y transacciones (como un @Service)
+Controlador          src/controllers/  recibe la petición (como un @RestController)
+   │
+   ├─▶ DTO (Zod)     src/dtos/         valida body y parámetros (como Bean Validation)
+   │
+   ▼  datos válidos y tipados
+Servicio             src/services/     lógica de negocio y transacciones (como un @Service)
    │  entidad / modelo
    ▼
-Mapper               src/mappers/    entidad → DTO de respuesta (no expone el modelo de la base)
+Mapper               src/mappers/      entidad → DTO de respuesta (no expone el modelo de la base)
    │
    ▼
-Respuesta
+Respuesta JSON
+
+Cualquier error ──▶  src/middlewares/errores.ts  ──▶  400 / 404 / 409 / 500 en JSON
 ```
 
-`src/index.ts` recorre este flujo completo. Es idempotente: si el cliente ya existe, no lo vuelve a crear.
+`src/index.ts` (`npm run demo`) recorre el mismo flujo por consola, sin HTTP.
 
 ### Comparación rápida
 
@@ -622,7 +767,7 @@ Respuesta
 
 ---
 
-## 11. Solución de problemas
+## 12. Solución de problemas
 
 | Síntoma | Causa | Solución |
 |---|---|---|

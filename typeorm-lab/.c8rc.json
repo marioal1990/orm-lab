@@ -15,11 +15,18 @@
     "src/index.ts",
     "src/seed.ts",
     "src/consultas.ts",
-    "src/transacciones.ts"
+    "src/transacciones.ts",
+    "src/server.ts",
+    "src/entities/**"
   ],
   "reporter": [
     "lcov",
     "text-summary"
   ],
-  "report-dir": "coverage"
+  "report-dir": "coverage",
+  "check-coverage": true,
+  "statements": 100,
+  "branches": 100,
+  "functions": 100,
+  "lines": 100
 }

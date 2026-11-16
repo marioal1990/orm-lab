@@ -9,3 +9,8 @@ export const CrearPedidoSchema = z.object({
 });
 
 export type CrearPedidoDto = z.infer<typeof CrearPedidoSchema>;
+export interface PedidoResponseDto {
+  id: number;
+  total: string;
+  clienteId: number;
+}
